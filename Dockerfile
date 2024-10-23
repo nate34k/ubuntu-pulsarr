@@ -16,9 +16,19 @@ RUN apt-get update && apt-get install -y \
 # Install Brave Browser
 RUN apt-get install -y apt-transport-https curl && \
     curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main"|sudo tee /etc/apt/sources.list.d/brave-browser-release.list && \
+    echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" | tee /etc/apt/sources.list.d/brave-browser-release.list && \
     apt-get update && \
     apt-get install -y brave-browser
+
+# Configure Brave to run in container
+RUN mkdir -p /etc/brave && \
+    echo '{"sandbox": false}' > /etc/brave/sandbox.conf && \
+    echo '#!/bin/bash\nexec /usr/bin/brave-browser --no-sandbox "$@"' > /usr/bin/brave-safe && \
+    chmod +x /usr/bin/brave-safe
+
+# Update the startup script
+RUN echo "/usr/bin/desktop_ready && brave-safe &" > $STARTUPDIR/custom_startup.sh \
+    && chmod +x $STARTUPDIR/custom_startup.sh
 
 ######### End Customizations ###########
 RUN chown 1000:0 $HOME
